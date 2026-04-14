@@ -1,0 +1,8 @@
+# Compiled Object files
+*.o
+
+# Executables
+snake_os
+
+# Misc
+.DS_Store
