@@ -42,5 +42,5 @@ A:
 * **Phase 1 (DONE)**: Core I/O drivers, scheduler runtime, snake head single variable movement, aur point/score system (Single block assignment) successfully implemented hain.
 * **Phase 2 (REMAINING)**: Heap Memory Allocation (Snake tail Linked Lists/Arrays) backend implementation, aur Secondary Storage File Systems (`<stdio.h> fopen`, `.dat` file save/load for High Scores).
 
----
-*Developed as a foundational Systems Programming project.*
+
+
