@@ -28,19 +28,18 @@ make
 ./snake_os
 ```
 
-## 📚 Technical Overview (Hinglish Viva Prep)
+## 📚 Technical Overview
 
-**Q: Ye Project exactly kaise behave karta hai as an OS simulation?**
-A: Is project ka design monolithic architecture flow follow karta hai:
-1. `main.c` ek **CPU Scheduler** ki tarah infinite loop me process context switch kar raha hai (START -> RUNNING -> GAME_OVER).
-2. `keyboard.c` hamara **Input Device Driver** hai. Ye Canonical mode disable kar deta hai jisse input buffer block hoke wait kiye bina sedha real-time hardware interrupt pass karta hai.
-3. `screen.c` ka kaam **Video Driver** jaisa hai `ANSI Escapes` \033 codes use karke frame memory directly overwrite karta hai (avoiding full clear stutter).
-4. `snake.c` ek simple **Application Process** hai jisko Kernel run karta hai. 
+**Q: How does this project behave as an OS simulation?**
+A: The project's design follows a monolithic architecture flow:
+1. `main.c` acts as a **CPU Scheduler**. It runs an infinite loop representing the system runtime and performs process context switching (START -> RUNNING -> GAME_OVER).
+2. `keyboard.c` serves as our **Input Device Driver**. It disables Canonical mode, allowing the input buffer to pass raw real-time hardware interrupts without blocking the main execution loop.
+3. `screen.c` functions as a **Video Driver**. Rather than clearing the entire console array, it directly manipulates frame memory via `ANSI Escapes` (\033 codes) to overwrite specific output pixels safely.
+4. `snake.c` represents a standard **Application Process** managed and executed by the Kernel.
 
-**Q: Phase 1 vs Phase 2 me kya farq hoga?**
+**Q: What is the difference between Phase 1 and Phase 2 implementations?**
 A: 
-* **Phase 1 (DONE)**: Core I/O drivers, scheduler runtime, snake head single variable movement, aur point/score system (Single block assignment) successfully implemented hain.
-* **Phase 2 (REMAINING)**: Heap Memory Allocation (Snake tail Linked Lists/Arrays) backend implementation, aur Secondary Storage File Systems (`<stdio.h> fopen`, `.dat` file save/load for High Scores).
-
+* **Phase 1 (DONE)**: Core I/O drivers, scheduler runtime, basic snake point coordinates, and scoring logic (Single block assignment) have been successfully finalized.
+* **Phase 2 (REMAINING)**: Heap Memory Allocation (Expanding Snake tail via Array/Linked Lists backends), and Secondary Storage File Systems (`<stdio.h> fopen`, `.dat` file save/load implementation for persisting High Scores).
 
 
