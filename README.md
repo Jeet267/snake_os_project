@@ -1,45 +1,123 @@
-# Snake OS Project 🐍💻
+# Snake OS — Terminal Game in C (OS Project)
 
-A terminal-based Snake game built in C to practically demonstrate Operating System principles like Process Scheduling, Memory Segregation, and Device Drivers through interactive means.
+A real-time Snake game that runs entirely in the terminal, written in C to practically demonstrate Operating System principles like Process Scheduling, Memory Tracking, and Device Drivers through interactive limits. 
 
-## 🚀 Features (Current: Phase 1)
-- **OS Kernel Loop Simulation**: Preemptive-like execution loops simulating continuous CPU execution.
-- **Hardware Interrupts**: Uses raw, non-blocking `termios` configurations to capture inputs instantly.
-- **Basic Memory Bound Tracking**: Bounds checking that simulates software-based memory violation detection (Segmentation Fault Simulation via Wall Collisions).
-- **Video Buffer Flush**: Manually mapping characters using ANSI Escape codes to simulate video adapter screen flushing.
-- **Scoring & Item Generation**: Dynamic coordinate spawning for game states.
+## Features
 
-## 🎮 Controls
-* **SPACE** = Start System/Game
-* **W / Arrow Key UP** = Move Up
-* **A / Arrow Key LEFT** = Move Left
-* **S / Arrow Key DOWN** = Move Down
-* **D / Arrow Key RIGHT** = Move Right
-* **R** = Restart Process (From Game Over)
-* **Q** = Terminate Process Gracefully
+| Feature | Details |
+| :--- | :--- |
+| **Monolithic Kernel** | Central `while` loop running continuously simulating CPU Process switching |
+| **Smooth Gameplay** | Non-blocking keyboard input via direct driver polling |
+| **Scoring Logic** | Dynamic random coordinates mapped to item generation for pointing (+10 points/item) |
+| **Start Screen** | Title layout and control instructions acting as the Initial Boot State |
+| **Process Exits** | Graceful Game-over states leading to Restart (`R`) or System Terminate (`Q`) |
+| **Driver Isolation** | Hardware signals encoded into clean interfaces (ANSI video, termios input) |
 
-## 🛠 Compilation & Execution
-To compile the system and boot the OS layer, ensure you have `gcc` and `make` installed.
+## Controls
+
+| Key | Action |
+| :--- | :--- |
+| **W / ↑** | Move Up |
+| **S / ↓**| Move Down |
+| **A / ←** | Move Left |
+| **D / →**| Move Right |
+| **R** | Restart Process (from Game Over) |
+| **Q** | Quit/Terminate Process |
+| **SPACE** | Start game on boot menu |
+
+## Build & Run
 
 ```bash
-cd Snake-Os
-make clean
+# Compile the project
 make
+
+# Boot the application
 ./snake_os
+
+# Remove compiled binaries
+make clean
+```
+*Requirements: GCC (or any POSIX C-compatible compiler) and a POSIX terminal (macOS / Linux).*
+
+## Project Structure
+
+```text
+Snake-Os/
+├── src/
+│   ├── math.c          # Simple math engine boundaries
+│   ├── screen.c        # ANSI terminal hardware driver representation
+│   ├── keyboard.c      # Non-blocking IO interrupt driver
+│   ├── snake.c         # Process logic handling states & memory bounds
+│   └── main.c          # Main Kernel file, OS Scheduler loop
+├── include/
+│   ├── game.h          # Process API definitions
+│   ├── keyboard.h      # Keyboard signal macros
+│   ├── maths.h         # Arithmetic prototypes
+│   └── screen.h        # Renderer commands
+├── Makefile            # Build routines
+└── README.md
 ```
 
-## 📚 Technical Overview
+## Architecture
 
-**Q: How does this project behave as an OS simulation?**
-A: The project's design follows a monolithic architecture flow:
-1. `main.c` acts as a **CPU Scheduler**. It runs an infinite loop representing the system runtime and performs process context switching (START -> RUNNING -> GAME_OVER).
-2. `keyboard.c` serves as our **Input Device Driver**. It disables Canonical mode, allowing the input buffer to pass raw real-time hardware interrupts without blocking the main execution loop.
-3. `screen.c` functions as a **Video Driver**. Rather than clearing the entire console array, it directly manipulates frame memory via `ANSI Escapes` (\033 codes) to overwrite specific output pixels safely.
-4. `snake.c` represents a standard **Application Process** managed and executed by the Kernel.
+#### Library Pipeline
+Each module handles specific System functions directly similar to an OS kernel stack:
 
-**Q: What is the difference between Phase 1 and Phase 2 implementations?**
-A: 
-* **Phase 1 (DONE)**: Core I/O drivers, scheduler runtime, basic snake point coordinates, and scoring logic (Single block assignment) have been successfully finalized.
-* **Phase 2 (REMAINING)**: Heap Memory Allocation (Expanding Snake tail via Array/Linked Lists backends), and Secondary Storage File Systems (`<stdio.h> fopen`, `.dat` file save/load implementation for persisting High Scores).
+```text
+keyboard.c  → captures WASD / arrow key interrupts (via raw termios mode)
+    ↓
+snake.c     → updates the virtual memory map (snake pointer coordinates) & applies rules
+    ↓
+math.c      → basic checks protecting operations (like clamping)
+    ↓
+screen.c    → forces memory out to the actual frame buffer using ANSI controls
+```
 
+#### Process State Machine
+```text
+  ┌─────────────┐                      
+  │  START      │ ────(SPACE)───► ┌───────────────┐
+  └─────────────┘                 │   RUNNING     │◄─────┐
+                                  │ (Event Loop)  │      │
+                                  └───────┬───────┘      │
+                                          │ (Collision)  │(Press R)
+                                  ┌───────▼───────┐      │
+                                  │   GAME OVER   │──────┘
+                                  └───────┬───────┘      
+                                          │ (Press Q)
+                                  ┌───────▼───────┐ 
+                                  │    QUIT       │
+                                  └───────────────┘
+```
+
+#### Memory Model (Phase 1)
+Currently, in Phase 1, backend logic utilizes global process state variables to represent the fundamental Memory unit pointer tracking (`snake_x`, `snake_y`, `food_x`). Phase 2 scopes the inclusion of exact Heap Allocations mechanisms (Arrays/Linked Lists for body tail generation).
+
+## Library Reference
+
+### `screen.c / screen.h`
+A pure-ANSI renderer relying on strings and fast buffer flushes.
+| Function | Purpose |
+| :--- | :--- |
+| `screen_clear()` | ESC[2J — Clears entire terminal canvas |
+| `screen_move_cursor(x,y)` | ESC[row;colH — Absolute cursor jump to coordinate |
+| `screen_draw_char(x,y,c)` | Drops a character representation directly into video area |
+| `screen_flush()` | Synchronizes logical changes to the display visibly avoiding tearing |
+
+### `keyboard.c / keyboard.h`
+Interacts using `termios.h` standard to intercept IO.
+| Function | Purpose |
+| :--- | :--- |
+| `keyboard_init()` | Saves default Terminal state and activates Raw, non-canonical, NOECHO modes |
+| `keyboard_restore()` | Necessary Teardown loop resetting environment variables to normal |
+| `read_key()` | Asynchronously runs `getchar()`. Converts complex bytes (UP ARROW \033[A) to numeric Keys |
+
+### `math.c / maths.h`
+Abstracted calculation functions helping define logical ceilings.
+| Function | Purpose |
+| :--- | :--- |
+| `my_clamp(v, lo, hi)` | Forces memory values inside maximum allocated limits |
+| `my_abs(x)` | Value absolutes useful in delta comparisons |
+
+---
 
