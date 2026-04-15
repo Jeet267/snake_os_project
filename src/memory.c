@@ -12,7 +12,7 @@
  * Block Layout in virtual_ram:
  *   [ BlockHeader (8 bytes) | user data (size bytes) ]
  *
- * NO malloc() / free() from <stdlib.h> is used.
+ * No malloc/free from <stdlib.h> is used.
  */
 
 #include "memory.h"

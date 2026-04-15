@@ -30,11 +30,18 @@ verify:
 	@echo "=== Checking for banned library calls ==="
 	@BANNED=0; \
 	 for f in src/*.c; do \
-	   if grep -v '//' $$f | grep -qE '\b(strlen|strcpy|sprintf|strcat)\s*\(' || \
-	      grep -v '//' $$f | grep -qE '\bmy_strlen\b' | head -0 && \
-	      grep -v '//' $$f | grep -qE '[^y]_malloc\b|[^l]free\s*\('; then \
-	     BANNED=1; fi; done; \
+	   if perl -0777 -pe 's{/\\*.*?\\*/}{}gs; s{//.*$$}{}mg' "$$f" | grep -nE '(^|[^[:alnum:]_])(strlen|strcpy|sprintf|strcat)[[:space:]]*[(]' >/dev/null; then \
+	     echo "BANNED: $$f uses string stdlib call(s):"; \
+	     perl -0777 -pe 's{/\\*.*?\\*/}{}gs; s{//.*$$}{}mg' "$$f" | grep -nE '(^|[^[:alnum:]_])(strlen|strcpy|sprintf|strcat)[[:space:]]*[(]' || true; \
+	     BANNED=1; \
+	   fi; \
+	   if perl -0777 -pe 's{/\\*.*?\\*/}{}gs; s{//.*$$}{}mg' "$$f" | grep -nE '(^|[^[:alnum:]_])(malloc|free)[[:space:]]*[(]' >/dev/null; then \
+	     echo "BANNED: $$f uses raw allocation call(s):"; \
+	     perl -0777 -pe 's{/\\*.*?\\*/}{}gs; s{//.*$$}{}mg' "$$f" | grep -nE '(^|[^[:alnum:]_])(malloc|free)[[:space:]]*[(]' || true; \
+	     BANNED=1; \
+	   fi; \
+	 done; \
 	 if [ $$BANNED -eq 0 ]; then echo 'PASS: No banned raw stdlib calls found.'; \
-	 else echo 'REVIEW: Check output above.'; fi
+	 else echo 'REVIEW: Remove banned call(s) listed above.'; exit 1; fi
 
 .PHONY: all clean verify
