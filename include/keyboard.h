@@ -1,18 +1,20 @@
+/**
+ * keyboard.h — Keyboard Driver Header
+ * =====================================
+ * Non-blocking raw terminal input driver.
+ */
+
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
-/**
- * Basic keyboard driver to provide non-blocking input
- * simulating hardware interrupts.
- */
+/* Arrow key escape-sequence codes (> ASCII range to avoid conflicts) */
+#define KEY_UP    256
+#define KEY_DOWN  257
+#define KEY_LEFT  258
+#define KEY_RIGHT 259
 
-#define KEY_UP 1000
-#define KEY_DOWN 1001
-#define KEY_LEFT 1002
-#define KEY_RIGHT 1003
+void keyboard_init(void);     /* switch terminal to raw/non-blocking mode */
+void keyboard_restore(void);  /* restore original terminal settings       */
+int  read_key(void);          /* non-blocking key read; returns -1 if none */
 
-void keyboard_init(void);
-int read_key(void);
-void keyboard_restore(void);
-
-#endif // KEYBOARD_H
+#endif /* KEYBOARD_H */
