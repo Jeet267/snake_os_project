@@ -1,0 +1,157 @@
+\documentclass[conference]{IEEEtran}
+
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{graphicx}
+
+\begin{document}
+
+\title{
+Snake OS: A Terminal-Based OS-Inspired Snake Game \\
+with Virtual RAM, Bitwise Math, and Device-Driver Abstractions
+}
+
+\author{
+\IEEEauthorblockN{Ayush Dev}
+\IEEEauthorblockA{
+% Roll No. / ID: (add if required) \\
+% Email: (add if required) \\
+Newton School of Technology
+}
+
+\and
+\IEEEauthorblockN{Abhijeet Kumar Shah}
+\IEEEauthorblockA{
+% Roll No. / ID: (add if required) \\
+% Email: (add if required) \\
+Newton School of Technology
+}
+
+\and
+\IEEEauthorblockN{Aditya Raj Sharma}
+\IEEEauthorblockA{
+% Roll No. / ID: (add if required) \\
+% Email: (add if required) \\
+Newton School of Technology
+}
+}
+
+\maketitle
+
+\begin{abstract}
+This paper presents \textit{Snake OS}, a real-time Snake game built entirely for the terminal in C as an Operating Systems themed project. The system is organized around a monolithic ``kernel'' event loop that drives scheduling of input polling, state updates, rendering, and timing control. Device I/O is modeled through two drivers: a non-blocking keyboard driver using POSIX \texttt{termios} raw mode and \texttt{O\_NONBLOCK}, and an ANSI terminal screen driver implemented as a software framebuffer with diff-based flushing to minimize flicker. Phase 2 extends the architecture with a static 64 KB Virtual RAM (VRAM) heap and a custom allocator (bump pointer + free list) to simulate memory tracking without using \texttt{malloc}/\texttt{free}. A custom bitwise math library implements multiplication and division using shift-and-add and long-division techniques, and an XOR-shift pseudo-random number generator drives entity placement. The resulting system demonstrates OS principles---process state, driver abstraction, memory management, and deterministic scheduling---through an interactive playable artifact.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Operating Systems Education, Terminal Graphics, Framebuffer, \texttt{termios}, Custom Allocator, Virtual RAM, Bitwise Arithmetic, XOR-Shift PRNG
+\end{IEEEkeywords}
+
+\section{Introduction}
+Operating Systems courses introduce core abstractions such as process state, scheduling, memory management, and device I/O. However, students often experience these ideas as separate topics. \textit{Snake OS} is designed to integrate these concepts into a single interactive program by implementing a real-time Snake game using OS-inspired modules: a kernel-style scheduler loop, device-driver interfaces for input and output, and a bounded heap managed by a custom allocator.
+
+The project is organized as two parts: (i) the terminal C implementation that demonstrates OS concepts directly, and (ii) an optional companion UI (Next.js) that visualizes algorithms (e.g., shift-and-add multiplication) for documentation and learning support.
+
+\section{Related Work}
+Terminal games are frequently used to teach event loops, state machines, and low-level I/O. In systems education, many projects model OS subsystems via constrained environments (fixed memory regions, custom allocators, and minimal standard library usage) to highlight trade-offs of performance, safety, and portability. For pseudo-random generation in constrained environments, XOR-shift generators are popular due to simplicity and speed.
+
+\section{System Design}
+\subsection{Repository Structure}
+The core C system is implemented in \texttt{src/} with interfaces in \texttt{include/}:
+\begin{itemize}
+    \item \textbf{\texttt{main.c}}: kernel loop and process state machine (\texttt{START}, \texttt{RUNNING}, \texttt{GAME\_OVER}, \texttt{QUIT})
+    \item \textbf{\texttt{snake.c}}: game logic, entity management (food/obstacles), collision detection, and render calls
+    \item \textbf{\texttt{keyboard.c}}: non-blocking keyboard driver (raw input + arrow decoding)
+    \item \textbf{\texttt{screen.c}}: ANSI terminal framebuffer driver with diff-based flush
+    \item \textbf{\texttt{memory.c}}: 64 KB VRAM region and custom allocator with diagnostics
+    \item \textbf{\texttt{math.c}}: bitwise arithmetic and XOR-shift PRNG
+    \item \textbf{\texttt{string.c}}: custom string utilities and integer conversion for HUD rendering
+\end{itemize}
+
+\subsection{Kernel Loop and Process State Machine}
+The system uses a single-threaded, deterministic loop. Each iteration performs:
+\begin{itemize}
+    \item input polling (non-blocking)
+    \item model update (snake movement, food consumption, level progression)
+    \item rendering to a back-buffer framebuffer
+    \item diff-based flush to the terminal
+    \item sleep based on computed speed (level-dependent)
+\end{itemize}
+
+The game behaves like a small process with explicit states:
+\begin{itemize}
+    \item \textbf{START}: boot menu and instructions; waits for \texttt{SPACE} to begin
+    \item \textbf{RUNNING}: scheduled update-render loop
+    \item \textbf{GAME\_OVER}: exception-like halt; allows restart or shutdown
+    \item \textbf{QUIT}: teardown and restore terminal state
+\end{itemize}
+
+\subsection{Keyboard Driver (Device Input)}
+The keyboard driver configures the terminal using POSIX \texttt{termios}:
+\begin{itemize}
+    \item disables canonical mode and echo for raw input
+    \item enables non-blocking reads via \texttt{fcntl} with \texttt{O\_NONBLOCK}
+    \item decodes arrow keys from ESC sequences and maps them to extended key codes
+\end{itemize}
+This approach prevents the kernel loop from blocking on input and supports smooth gameplay.
+
+\subsection{Screen Driver (Device Output via Framebuffer)}
+The screen driver treats the terminal as a display device. It maintains a software framebuffer of size 80$\times$24 where each cell stores a character and a color. On flush, the driver compares the current buffer to the previous buffer and only prints changed cells using ANSI escape sequences. This reduces flicker and avoids full-screen redraw.
+
+\section{Memory Subsystem (Virtual RAM)}
+\subsection{VRAM Heap Model}
+To simulate constrained memory, the allocator uses a static 64 KB array as the heap. Each allocated block contains an in-band header:
+\begin{itemize}
+    \item a magic sentinel (\texttt{0xDEADBEEF}) to detect corruption
+    \item payload size and free status
+    \item a pointer for the free list
+\end{itemize}
+
+\subsection{Allocation and Deallocation Strategy}
+The allocator implements:
+\begin{itemize}
+    \item \textbf{first-fit} search over a free list
+    \item fallback \textbf{bump allocation} if no suitable free block exists
+    \item deallocation that marks blocks free and prepends them to the free list
+\end{itemize}
+Diagnostics provide the current allocation count and VRAM usage, enabling a ``system HUD'' that reflects memory behavior during gameplay.
+
+\section{Bitwise Math and Randomization}
+\subsection{Bitwise Arithmetic}
+The math library implements core arithmetic without relying on standard math facilities:
+\begin{itemize}
+    \item multiplication using shift-and-add (Russian peasant method)
+    \item division using bit-by-bit long division
+    \item modulo computed from division and multiplication
+\end{itemize}
+These routines support coordinate calculation, level logic, and integer conversions.
+
+\subsection{XOR-Shift PRNG}
+Entity placement uses a fast 32-bit XOR-shift generator. Random values are masked to remain non-negative and constrained to the board using the custom modulo function, with a final clamp for safety.
+
+\section{Results and Evaluation}
+The implementation achieves stable real-time behavior on POSIX terminals (macOS/Linux). Non-blocking input prevents stalls, while diff-based rendering keeps updates efficient within a fixed-size framebuffer. The VRAM allocator demonstrates bounded heap usage and exposes diagnostics at runtime, making memory behavior observable. The bitwise math and PRNG remove reliance on heavyweight libraries and reinforce low-level computation constraints.
+
+\section{Limitations}
+\begin{itemize}
+    \item The free list allocator can fragment VRAM; no block coalescing/compaction is implemented.
+    \item The sentinel-based validation catches only some invalid pointer cases.
+    \item The system assumes ANSI escape support and sufficient terminal size for an 80$\times$24 framebuffer.
+    \item Scheduling is conceptual (single-threaded loop), not preemptive or concurrent.
+\end{itemize}
+
+\section{Conclusion}
+\textit{Snake OS} integrates OS concepts into a single playable terminal application. A kernel-style scheduler loop coordinates device input/output drivers, a VRAM-backed memory subsystem, and bitwise utilities for arithmetic and randomization. The project provides an educational bridge between OS abstractions and practical implementation decisions observable during runtime.
+
+\begin{thebibliography}{00}
+\bibitem{b1} IEEE Std 1003.1-2017 (POSIX), ``The Open Group Base Specifications,'' 2017.
+\bibitem{b2} G. Marsaglia, ``Xorshift RNGs,'' \textit{Journal of Statistical Software}, vol. 8, no. 14, 2003.
+\bibitem{b3} The Open Group, \textit{The termios Interface (POSIX)}, 2017.
+\bibitem{b4} D. M. Ritchie, ``The C Programming Language,'' 2nd ed., Prentice Hall, 1988.
+\bibitem{b5} Next.js Documentation, ``Next.js App Router,'' 2026.
+\end{thebibliography}
+
+\end{document}
+
