@@ -42,15 +42,15 @@ Newton School of Technology
 \maketitle
 
 \begin{abstract}
-This paper presents \textit{Snake OS}, a real-time Snake game built entirely for the terminal in C as an Operating Systems themed project. The system is organized around a monolithic ``kernel'' event loop that drives scheduling of input polling, state updates, rendering, and timing control. Device I/O is modeled through two drivers: a non-blocking keyboard driver using POSIX \texttt{termios} raw mode and \texttt{O\_NONBLOCK}, and an ANSI terminal screen driver implemented as a software framebuffer with diff-based flushing to minimize flicker. Phase 2 extends the architecture with a static 64 KB Virtual RAM (VRAM) heap and a custom allocator (bump pointer + free list) to simulate memory tracking without using \texttt{malloc}/\texttt{free}. A custom bitwise math library implements multiplication and division using shift-and-add and long-division techniques, and an XOR-shift pseudo-random number generator drives entity placement. The resulting system demonstrates OS principles---process state, driver abstraction, memory management, and deterministic scheduling---through an interactive playable artifact.
+This paper presents Snake OS, a real-time Snake game built entirely for the terminal in C as an Operating Systems themed project. The system is organized around a monolithic ``kernel'' event loop that drives scheduling of input polling, state updates, rendering, and timing control. Device I/O is modeled through two drivers: a non-blocking keyboard driver using POSIX termios raw mode and O\_NONBLOCK, and an ANSI terminal screen driver implemented as a software framebuffer with diff-based flushing to minimize flicker. Phase 2 extends the architecture with a static 64 KB Virtual RAM (VRAM) heap and a custom allocator (bump pointer + free list) to simulate memory tracking without using malloc/free. A custom bitwise math library implements multiplication and division using shift-and-add and long-division techniques, and an XOR-shift pseudo-random number generator drives entity placement. The resulting system demonstrates OS principles---process state, driver abstraction, memory management, and deterministic scheduling---through an interactive playable artifact.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Operating Systems Education, Terminal Graphics, Framebuffer, \texttt{termios}, Custom Allocator, Virtual RAM, Bitwise Arithmetic, XOR-Shift PRNG
+Operating Systems Education, Terminal Graphics, Framebuffer, termios, Custom Allocator, Virtual RAM, Bitwise Arithmetic, XOR-Shift PRNG
 \end{IEEEkeywords}
 
 \section{Introduction}
-Operating Systems courses introduce core abstractions such as process state, scheduling, memory management, and device I/O. However, students often experience these ideas as separate topics. \textit{Snake OS} is designed to integrate these concepts into a single interactive program by implementing a real-time Snake game using OS-inspired modules: a kernel-style scheduler loop, device-driver interfaces for input and output, and a bounded heap managed by a custom allocator.
+Operating Systems courses introduce core abstractions such as process state, scheduling, memory management, and device I/O. However, students often experience these ideas as separate topics. Snake OS is designed to integrate these concepts into a single interactive program by implementing a real-time Snake game using OS-inspired modules: a kernel-style scheduler loop, device-driver interfaces for input and output, and a bounded heap managed by a custom allocator.
 
 The project is organized as two parts: (i) the terminal C implementation that demonstrates OS concepts directly, and (ii) an optional companion UI (Next.js) that visualizes algorithms (e.g., shift-and-add multiplication) for documentation and learning support.
 
@@ -59,7 +59,7 @@ Terminal games are frequently used to teach event loops, state machines, and low
 
 \section{System Design}
 \subsection{Repository Structure}
-The core C system is implemented in \texttt{src/} with interfaces in \texttt{include/}:
+The core C system is implemented in src/ with interfaces in include/:
 \begin{itemize}
     \item \textbf{\texttt{main.c}}: kernel loop and process state machine (\texttt{START}, \texttt{RUNNING}, \texttt{GAME\_OVER}, \texttt{QUIT})
     \item \textbf{\texttt{snake.c}}: game logic, entity management (food/obstacles), collision detection, and render calls
@@ -89,7 +89,7 @@ The game behaves like a small process with explicit states:
 \end{itemize}
 
 \subsection{Keyboard Driver (Device Input)}
-The keyboard driver configures the terminal using POSIX \texttt{termios}:
+The keyboard driver configures the terminal using POSIX termios:
 \begin{itemize}
     \item disables canonical mode and echo for raw input
     \item enables non-blocking reads via \texttt{fcntl} with \texttt{O\_NONBLOCK}
@@ -143,12 +143,12 @@ The implementation achieves stable real-time behavior on POSIX terminals (macOS/
 \end{itemize}
 
 \section{Conclusion}
-\textit{Snake OS} integrates OS concepts into a single playable terminal application. A kernel-style scheduler loop coordinates device input/output drivers, a VRAM-backed memory subsystem, and bitwise utilities for arithmetic and randomization. The project provides an educational bridge between OS abstractions and practical implementation decisions observable during runtime.
+Snake OS integrates OS concepts into a single playable terminal application. A kernel-style scheduler loop coordinates device input/output drivers, a VRAM-backed memory subsystem, and bitwise utilities for arithmetic and randomization. The project provides an educational bridge between OS abstractions and practical implementation decisions observable during runtime.
 
 \begin{thebibliography}{00}
 \bibitem{b1} IEEE Std 1003.1-2017 (POSIX), ``The Open Group Base Specifications,'' 2017.
 \bibitem{b2} G. Marsaglia, ``Xorshift RNGs,'' \textit{Journal of Statistical Software}, vol. 8, no. 14, 2003.
-\bibitem{b3} The Open Group, \textit{The termios Interface (POSIX)}, 2017.
+\bibitem{b3} The Open Group, The termios Interface (POSIX), 2017.
 \bibitem{b4} D. M. Ritchie, ``The C Programming Language,'' 2nd ed., Prentice Hall, 1988.
 \bibitem{b5} Next.js Documentation, ``Next.js App Router,'' 2026.
 \end{thebibliography}
