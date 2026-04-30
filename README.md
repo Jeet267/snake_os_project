@@ -4,7 +4,7 @@ A real-time Snake game that runs entirely in the terminal, written in C to pract
 
 ---
 
-### **Project Team**
+### **Team_Member**
 - **Abhijeet Kumar Shah**
 - **Aditya Raj Sharma**
 - **Ayush Dev**
