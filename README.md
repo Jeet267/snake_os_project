@@ -1,17 +1,27 @@
 # Snake OS — Terminal Game in C (OS Project)
 
-A real-time Snake game that runs entirely in the terminal, written in C to practically demonstrate Operating System principles like Process Scheduling, Memory Tracking, and Device Drivers through interactive limits. 
+A real-time Snake game that runs entirely in the terminal, written in C to practically demonstrate Operating System principles like Process Scheduling, Memory Tracking, and Device Drivers through interactive limits.
 
-## Features
+---
+
+### **Project Team**
+- **Abhijeet Kumar Shah**
+- **Aditya Raj Sharma**
+- **Ayush Dev**
+
+---
+
+## Features (Phase 2)
 
 | Feature | Details |
 | :--- | :--- |
-| **Monolithic Kernel** | Central `while` loop running continuously simulating CPU Process switching |
-| **Smooth Gameplay** | Non-blocking keyboard input via direct driver polling |
-| **Scoring Logic** | Dynamic random coordinates mapped to item generation for pointing (+10 points/item) |
-| **Start Screen** | Title layout and control instructions acting as the Initial Boot State |
-| **Process Exits** | Graceful Game-over states leading to Restart (`R`) or System Terminate (`Q`) |
-| **Driver Isolation** | Hardware signals encoded into clean interfaces (ANSI video, termios input) |
+| **Monolithic Kernel** | Central `while` loop simulating CPU Process switching and kernel-level task management. |
+| **Virtual RAM (VRAM)** | 64 KB static heap (`memory.c`) with a custom bump + free-list allocator. |
+| **Bitwise Math Engine** | Arithmetic (`*`, `/`, `%`) implemented using only bit-shifts and logical gates. |
+| **XOR-Shift PRNG** | High-performance bitwise random number generation for game entity placement. |
+| **ANSI Color Driver** | Full foreground color support (Cyan, Green, Red, Yellow) for a premium arcade feel. |
+| **Smooth Gameplay** | Non-blocking keyboard input via direct driver polling and `termios` raw mode. |
+| **System HUD** | Real-time tracking of memory usage, allocation counts, and CPU "Kernel" state. |
 
 ## Controls
 
@@ -44,16 +54,20 @@ make clean
 ```text
 Snake-Os/
 ├── src/
-│   ├── math.c          # Simple math engine boundaries
-│   ├── screen.c        # ANSI terminal hardware driver representation
+│   ├── math.c          # Bitwise math engine (mul, div, mod, sqrt)
+│   ├── memory.c        # Virtual RAM subsystem & custom allocator
+│   ├── screen.c        # ANSI terminal hardware driver & framebuffer
 │   ├── keyboard.c      # Non-blocking IO interrupt driver
-│   ├── snake.c         # Process logic handling states & memory bounds
+│   ├── string.c        # Custom string library (no <string.h>)
+│   ├── snake.c         # Process logic, body management & rules
 │   └── main.c          # Main Kernel file, OS Scheduler loop
 ├── include/
-│   ├── game.h          # Process API definitions
+│   ├── game.h          # Process API & Game state definitions
+│   ├── memory.h        # Allocator interface
 │   ├── keyboard.h      # Keyboard signal macros
-│   ├── maths.h         # Arithmetic prototypes
-│   └── screen.h        # Renderer commands
+│   ├── maths.h         # Arithmetic prototypes & PRNG
+│   ├── mystring.h      # String manipulation prototypes
+│   └── screen.h        # Renderer & Color commands
 ├── Makefile            # Build routines
 └── README.md
 ```
@@ -68,7 +82,9 @@ keyboard.c  → captures WASD / arrow key interrupts (via raw termios mode)
     ↓
 snake.c     → updates the virtual memory map (snake pointer coordinates) & applies rules
     ↓
-math.c      → basic checks protecting operations (like clamping)
+math.c      → bitwise arithmetic for coordinate calculation & PRNG food placement
+    ↓
+memory.c    → manages heap blocks for dynamic snake body segments
     ↓
 screen.c    → forces memory out to the actual frame buffer using ANSI controls
 ```
@@ -90,34 +106,33 @@ screen.c    → forces memory out to the actual frame buffer using ANSI controls
                                   └───────────────┘
 ```
 
-#### Memory Model (Phase 1)
-Currently, in Phase 1, backend logic utilizes global process state variables to represent the fundamental Memory unit pointer tracking (`snake_x`, `snake_y`, `food_x`). Phase 2 scopes the inclusion of exact Heap Allocations mechanisms (Arrays/Linked Lists for body tail generation).
+#### Memory Model (Phase 2)
+In Phase 2, the system implements a **Static 64 KB Virtual RAM region**. 
+- **Heap Allocation**: Uses `my_alloc()` and `my_dealloc()` to manage memory without `malloc`.
+- **Snake Body**: Managed as a dynamic array in VRAM, allowing the snake to grow during runtime.
+- **Metadata**: In-band block headers track allocation size and state with `0xDEADBEEF` magic sentinels.
 
 ## Library Reference
 
-### `screen.c / screen.h`
-A pure-ANSI renderer relying on strings and fast buffer flushes.
+### `memory.c / memory.h`
 | Function | Purpose |
 | :--- | :--- |
-| `screen_clear()` | ESC[2J — Clears entire terminal canvas |
-| `screen_move_cursor(x,y)` | ESC[row;colH — Absolute cursor jump to coordinate |
-| `screen_draw_char(x,y,c)` | Drops a character representation directly into video area |
-| `screen_flush()` | Synchronizes logical changes to the display visibly avoiding tearing |
-
-### `keyboard.c / keyboard.h`
-Interacts using `termios.h` standard to intercept IO.
-| Function | Purpose |
-| :--- | :--- |
-| `keyboard_init()` | Saves default Terminal state and activates Raw, non-canonical, NOECHO modes |
-| `keyboard_restore()` | Necessary Teardown loop resetting environment variables to normal |
-| `read_key()` | Asynchronously runs `getchar()`. Converts complex bytes (UP ARROW \033[A) to numeric Keys |
+| `my_alloc(size)` | Allocates `size` bytes from VRAM using first-fit free-list logic. |
+| `my_dealloc(ptr)` | Returns a block to the free-list for reuse. |
+| `mem_reset()` | Wipes the entire Virtual RAM region (System Reboot). |
 
 ### `math.c / maths.h`
-Abstracted calculation functions helping define logical ceilings.
+| Function | Implementation |
+| :--- | :--- |
+| `my_mul(a, b)` | Russian Peasant / Shift-and-Add algorithm. |
+| `my_div(a, b)` | Non-restoring long division. |
+| `xor_rand()` | 32-bit XOR-Shift pseudo-random number generator. |
+
+### `screen.c / screen.h`
 | Function | Purpose |
 | :--- | :--- |
-| `my_clamp(v, lo, hi)` | Forces memory values inside maximum allocated limits |
-| `my_abs(x)` | Value absolutes useful in delta comparisons |
+| `screen_draw_char()` | Drops a character with specific foreground color into the buffer. |
+| `screen_flush()` | Synchronizes logical changes to the display visibly avoiding tearing. |
 
 ---
 
